@@ -121,6 +121,16 @@ extern crate std;
 
 #[doc(hidden)]
 pub mod __ns_macros;
+#[cfg(all(
+    feature = "NSAppleEventDescriptor",
+    feature = "NSAppleEventManager",
+    feature = "NSArray",
+    feature = "NSString",
+    feature = "NSURL",
+    feature = "objc2-core-services",
+    target_vendor = "apple"
+))]
+mod apple_event_manager;
 #[cfg(feature = "NSEnumerator")]
 #[macro_use]
 mod iter;
@@ -178,6 +188,16 @@ mod uuid;
 #[cfg(feature = "NSValue")]
 mod value;
 
+#[cfg(all(
+    feature = "NSAppleEventDescriptor",
+    feature = "NSAppleEventManager",
+    feature = "NSArray",
+    feature = "NSString",
+    feature = "NSURL",
+    feature = "objc2-core-services",
+    target_vendor = "apple"
+))]
+pub use self::apple_event_manager::{AppleEventHandler, AppleEventKind, EventHandlerRegistration};
 #[cfg(feature = "NSObjCRuntime")]
 pub use self::comparison_result::NSComparisonResult;
 #[cfg(feature = "NSObject")]

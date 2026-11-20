@@ -1,3 +1,4 @@
+mod apple_event_manager;
 mod array;
 mod attributed_string;
 mod auto_traits;

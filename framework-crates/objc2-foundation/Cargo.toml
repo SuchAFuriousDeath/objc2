@@ -45,6 +45,8 @@ objc2-core-foundation = { workspace = true, optional = true, features = [
 objc2-core-services = { workspace = true, optional = true, features = [
     "AE",
     "AEDataModel",
+    "AERegistry",
+    "AppleEvents",
     "objc2",
 ] }
 
