@@ -4,8 +4,9 @@ use core::ptr::NonNull;
 use core::{fmt, ptr};
 
 use crate::__macros::define_class::initialize_ivars;
+use crate::rc::Retained;
 use crate::runtime::{objc_release_fast, AnyClass, AnyObject};
-use crate::{DefinedClass, Message};
+use crate::{msg_send, ClassType, DefinedClass, IsInitAvailable, Message};
 
 /// An Objective-C object that has been allocated, but not initialized.
 ///
@@ -328,6 +329,70 @@ impl<T: ?Sized + Message> PartialInit<T> {
     pub(crate) fn into_ptr(this: Self) -> *mut T {
         let this = ManuallyDrop::new(this);
         this.ptr as *mut T
+    }
+}
+
+impl<T: DefinedClass> PartialInit<T> {
+    /// Initializes the object with the superclass' `init` method.
+    ///
+    /// This is the same as calling `msg_send![super(this), init]`, but is
+    /// only possible if the superclass' `init` may be called, see
+    /// [`ClassType::Init`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use objc2::rc::Retained;
+    /// use objc2::runtime::NSObject;
+    /// use objc2::{define_class, AnyThread, Ivars};
+    ///
+    /// define_class!(
+    ///     #[unsafe(super(NSObject))]
+    ///     struct MyObject {
+    ///         number: u32,
+    ///     }
+    /// );
+    ///
+    /// impl MyObject {
+    ///     fn new(number: u32) -> Retained<Self> {
+    ///         Self::alloc().set_ivars(Ivars::<Self> { number }).init()
+    ///     }
+    /// }
+    ///
+    /// assert_eq!(*MyObject::new(42).number(), 42);
+    /// ```
+    ///
+    /// A superclass with an unavailable `init` can't be initialized like
+    /// that:
+    ///
+    /// ```compile_fail
+    /// use objc2::rc::Retained;
+    /// use objc2::runtime::NSProxy;
+    /// use objc2::{define_class, AnyThread, Ivars};
+    ///
+    /// define_class!(
+    ///     #[unsafe(super(NSProxy))]
+    ///     struct MyProxy {}
+    /// );
+    ///
+    /// impl MyProxy {
+    ///     fn new() -> Retained<Self> {
+    ///         Self::alloc().set_ivars(Ivars::<Self> {}).init()
+    ///     }
+    /// }
+    /// ```
+    #[inline]
+    #[track_caller]
+    pub fn init(self) -> Retained<T>
+    where
+        T::Super: ClassType,
+        <T::Super as ClassType>::Init: IsInitAvailable,
+    {
+        // SAFETY: The safety requirements of `ClassType` guarantee that the
+        // superclass' `init` method may be called, since its `Init` is
+        // `InitAvailable` (enforced by the `IsInitAvailable` bound). `init`
+        // takes no arguments and returns the initialized object.
+        unsafe { msg_send![super(self), init] }
     }
 }
 

@@ -16,9 +16,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 * Added `rc::Weak::empty()`.
 * Added `rc::Weak::copy()`.
 * Added `rc::Weak::store()`.
+* Added `PartialInit::init()`, for safely calling the superclass' `init`
+  method after setting the instance variables.
+
+  ```rust
+  //
+  // Before
+  //
+  let this = Self::alloc().set_ivars(Ivars::<Self> { foo: 42 });
+  unsafe { msg_send![super(this), init] }
+
+  //
+  // After
+  //
+  Self::alloc().set_ivars(Ivars::<Self> { foo: 42 }).init()
+  ```
 * Added `#[init = available]` / `#[init = unavailable]` attributes to
-  `extern_class!` and `define_class!`, which mark whether a class' `init`
-  method may be called.
+  `extern_class!` and `define_class!`, which control whether subclasses may
+  use `PartialInit::init()`.
 
 ## Changed
 * **BREAKING**: Changed syntax for `define_class!` ivars (instance variables).
