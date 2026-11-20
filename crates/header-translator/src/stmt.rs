@@ -638,6 +638,9 @@ pub enum Stmt {
         designated_initializers: Vec<String>,
         derives: Derives,
         main_thread_only: bool,
+        /// Whether the class itself declares `-init` as available or
+        /// unavailable (`None` if inherited from the superclass).
+        init_available: Option<bool>,
         skipped: bool,
         sendable: bool,
         documentation: Documentation,
@@ -957,6 +960,13 @@ impl Stmt {
                     context,
                 );
 
+                // Unavailable methods are still parsed (they're only skipped
+                // when emitted), so this also finds `init NS_UNAVAILABLE`.
+                let init_available = methods
+                    .iter()
+                    .find(|method| !method.is_class && method.selector == "init")
+                    .map(|method| method.availability.is_available());
+
                 let mut protocols = Default::default();
                 parse_protocols(entity, &mut protocols, context);
                 let skipped_protocols = data.skipped_protocols.clone();
@@ -1093,6 +1103,7 @@ impl Stmt {
                     designated_initializers,
                     derives: data.derives.clone(),
                     main_thread_only: thread_safety.explicit_mainthreadonly(),
+                    init_available,
                     skipped: data.definition_skipped,
                     // Ignore sendability on superclasses; since it's an auto
                     // trait, it's propagated to subclasses anyhow!
@@ -2752,6 +2763,7 @@ impl Stmt {
                     designated_initializers: _,
                     derives,
                     main_thread_only,
+                    init_available,
                     skipped,
                     sendable,
                     documentation,
@@ -2780,6 +2792,11 @@ impl Stmt {
                     writeln!(f, "))]")?;
                     if *main_thread_only {
                         writeln!(f, "    #[thread_kind = MainThreadOnly]")?;
+                    }
+                    match init_available {
+                        Some(true) => writeln!(f, "    #[init = available]")?,
+                        Some(false) => writeln!(f, "    #[init = unavailable]")?,
+                        None => {}
                     }
                     if *objc_name != id.name {
                         writeln!(f, "    #[name = {objc_name:?}]")?;
