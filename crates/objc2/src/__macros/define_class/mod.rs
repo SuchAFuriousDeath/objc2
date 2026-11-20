@@ -111,6 +111,14 @@ pub use self::thunk::*;
 /// Same [as in `extern_class!`](crate::extern_class#thread_kind---optional).
 ///
 ///
+/// ### `#[init = ...]` (optional)
+///
+/// Same [as in `extern_class!`](crate::extern_class#init---optional).
+///
+/// Set this to `unavailable` if your class requires a different initializer
+/// to be used.
+///
+///
 /// ### `#[name = "..."]` (optional)
 ///
 /// Specify the runtime-name for the class. Must be unique across the entire
@@ -248,6 +256,8 @@ pub use self::thunk::*;
 /// When writing `#[unsafe(super(...))]`, you must ensure that:
 /// - Any invariants that the superclass [`ClassType::Super`] may have must be
 ///   upheld.
+/// - If `init` is inherited as available, calling it on your class must be
+///   sound (e.g. it must not rely on a custom initializer having been called).
 /// - If your type implements `Drop`, the implementation must abide by the
 ///   following rules:
 ///   - It must not call any overridden methods.
@@ -601,6 +611,7 @@ macro_rules! __define_class_inner {
 
         ($($safety:tt $superclass:path $(, $superclasses:path)* $(,)?)?)
         ($($($thread_kind:tt)+)?)
+        ($($($init:tt)+)?)
         ($($name:tt)*)
         ($($derives:tt)*)
         ($($attr_struct:tt)*)
@@ -736,6 +747,11 @@ macro_rules! __define_class_inner {
                     ($(dyn ($($thread_kind)+))?)
                     // Default to the super class' thread kind
                     (<<Self as $crate::ClassType>::Super as $crate::ClassType>::ThreadKind)
+                };
+                type Init = $crate::__fallback_if_not_set! {
+                    ($($crate::__init_kind!($($init)+))?)
+                    // Default to the super class' value
+                    (<<Self as $crate::ClassType>::Super as $crate::ClassType>::Init)
                 };
 
                 const NAME: &'static $crate::__macros::CStr = $crate::__macros::class_c_name(

@@ -188,6 +188,7 @@ macro_rules! __extern_protocol_inner {
 
         ($($superclasses:tt)*)
         ($($thread_kind:tt)*)
+        ($($init:tt)*)
         ($($name:tt)*)
         ($($derives:tt)*)
         ($($attr_protocol:tt)*)
@@ -232,6 +233,8 @@ macro_rules! __extern_protocol_inner {
 
         $crate::__extern_protocol_check_no_thread_kind!($($thread_kind)*);
 
+        $crate::__extern_protocol_check_no_init!($($init)*);
+
         $crate::__extern_protocol_check_no_derives!($($derives)*);
     };
 }
@@ -253,6 +256,15 @@ macro_rules! __extern_protocol_check_no_thread_kind {
         $crate::__macros::compile_error!(
             "#[thread_kind = ...] is not supported in extern_protocol!. Add MainThreadOnly or AnyThread bound instead"
         );
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __extern_protocol_check_no_init {
+    () => {};
+    ($($init:tt)*) => {
+        $crate::__macros::compile_error!("#[init = ...] is not supported in extern_protocol!");
     };
 }
 

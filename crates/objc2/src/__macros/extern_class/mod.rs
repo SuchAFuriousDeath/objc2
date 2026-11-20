@@ -70,6 +70,18 @@ pub use self::checks::*;
 /// [`MainThreadOnly`]: crate::MainThreadOnly
 ///
 ///
+/// ### `#[init = ...]` (optional)
+///
+/// Controls [whether `init` may be called][crate::ClassType::Init] on the
+/// class, which allows subclasses to use [`PartialInit::init`]. Either
+/// `available` or `unavailable`.
+///
+/// If not specified, this is inherited from the superclass. Set it to
+/// `unavailable` if the class marks `init` as `NS_UNAVAILABLE`.
+///
+/// [`PartialInit::init`]: crate::rc::PartialInit::init
+///
+///
 /// ### `#[name = "..."]` (optional)
 ///
 /// Controls the [name][crate::ClassType::NAME] of the class.
@@ -104,6 +116,8 @@ pub use self::checks::*;
 /// 1. The first superclass is correct.
 /// 2. The thread kind is set to `MainThreadOnly` if the class can only be
 ///    used from the main thread.
+/// 3. `init` is set to `unavailable` if the class' `init` method may not be
+///    called (and is not inherited as available from the superclass).
 ///
 ///
 /// # Examples
@@ -249,6 +263,7 @@ macro_rules! __extern_class_inner {
 
         ($($safety:tt $superclass:path $(, $superclasses:path)* $(,)?)?)
         ($($($thread_kind:tt)+)?)
+        ($($($init:tt)+)?)
         ($($name:tt)*)
         ($($derives:tt)*)
         ($($attr_struct:tt)*)
@@ -306,6 +321,11 @@ macro_rules! __extern_class_inner {
                 ($(dyn ($($thread_kind)+))?)
                 // Default to the super class' thread kind
                 (<<Self as $crate::ClassType>::Super as $crate::ClassType>::ThreadKind)
+            };
+            type Init = $crate::__fallback_if_not_set! {
+                ($($crate::__init_kind!($($init)+))?)
+                // Default to the super class' value
+                (<<Self as $crate::ClassType>::Super as $crate::ClassType>::Init)
             };
 
             const NAME: &'static $crate::__macros::CStr = $crate::__macros::class_c_name(

@@ -16,6 +16,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 * Added `rc::Weak::empty()`.
 * Added `rc::Weak::copy()`.
 * Added `rc::Weak::store()`.
+* Added `#[init = available]` / `#[init = unavailable]` attributes to
+  `extern_class!` and `define_class!`, which mark whether a class' `init`
+  method may be called.
 
 ## Changed
 * **BREAKING**: Changed syntax for `define_class!` ivars (instance variables).
@@ -103,6 +106,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   `&CStr` instead of `&str`.
 * **BREAKING**: Changed `rc::Weak` to be externally pinned. This should allow
   using it directly in FFI and instance variables.
+* **BREAKING**: Added `ClassType::Init` associated type, which manual
+  implementations of `ClassType` must now specify (usually as
+  `<Self::Super as ClassType>::Init`).
 
 ## Removed
 * Removed `rc::AutoreleaseSafe`, it relies on unstable language features that

@@ -9,7 +9,7 @@ use crate::rc::{Allocated, DefaultRetained, Retained};
 use crate::runtime::{AnyClass, AnyObject, AnyProtocol, ImplementedBy, ProtocolObject, Sel};
 use crate::{
     extern_conformance, extern_methods, extern_protocol, AnyThread, ClassType, DowncastTarget,
-    Message,
+    InitAvailable, Message,
 };
 
 /// The root class of most Objective-C class hierarchies.
@@ -82,6 +82,7 @@ impl RefUnwindSafe for private::ForDefinedSubclasses {}
 unsafe impl ClassType for NSObject {
     type Super = AnyObject;
     type ThreadKind = dyn AnyThread;
+    type Init = InitAvailable;
     const NAME: &'static CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"NSObject\0") };
 
     #[inline]

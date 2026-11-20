@@ -5,7 +5,7 @@ use core::fmt;
 use core::hash;
 
 use crate::runtime::{AnyClass, AnyObject, NSObjectProtocol, ProtocolObject};
-use crate::{extern_conformance, AnyThread, ClassType, DowncastTarget};
+use crate::{extern_conformance, AnyThread, ClassType, DowncastTarget, InitUnavailable};
 
 /// An abstract superclass defining an API for objects that act as
 /// stand-ins for other objects or for objects that don’t exist yet.
@@ -28,6 +28,9 @@ crate::__extern_class_impl_traits! {
 unsafe impl ClassType for NSProxy {
     type Super = AnyObject;
     type ThreadKind = dyn AnyThread;
+    // `NSProxy` is a root class without an `init`, subclasses must define
+    // their own initializers.
+    type Init = InitUnavailable;
     const NAME: &'static CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"NSProxy\0") };
 
     #[inline]

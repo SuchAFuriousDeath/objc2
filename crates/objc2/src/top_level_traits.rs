@@ -208,6 +208,10 @@ pub unsafe trait Message: RefEncode {
 // 4. [`Self::NAME`] must be the name of the class that this type represents.
 // 5. The class returned by [`Self::class`] must be the class that this type
 //    represents.
+// 6. [`Self::Init`] must only be [`InitAvailable`] if the class' `init`
+//    method may be called. It is safe to default to the super class' value,
+//    `<Self::Super as ClassType>::Init`, as long as the class doesn't add
+//    requirements that `init` doesn't fulfill.
 pub unsafe trait ClassType: Message {
     /// The superclass of this class.
     ///
@@ -232,6 +236,15 @@ pub unsafe trait ClassType: Message {
     /// [`dyn AnyThread`]: AnyThread
     /// [`dyn MainThreadOnly`]: MainThreadOnly
     type ThreadKind: ?Sized + ThreadKind;
+
+    /// Whether the class' `init` method may be called, e.g. by subclasses
+    /// with [`PartialInit::init`].
+    ///
+    /// One of [`InitAvailable`] or [`InitUnavailable`]. Classes inherit this
+    /// from their superclass, unless it is set with `#[init = ...]`.
+    ///
+    /// [`PartialInit::init`]: crate::rc::PartialInit::init
+    type Init: InitKind;
 
     /// The name of the Objective-C class that this type represents.
     ///
@@ -489,6 +502,7 @@ mod private {
     pub trait SealedAnyThread {}
     pub trait SealedMainThreadOnly {}
     pub trait SealedThreadKind {}
+    pub trait SealedInitKind {}
 }
 
 /// Marker trait for classes (and protocols) that are usable from any thread,
@@ -654,6 +668,36 @@ impl private::SealedThreadKind for dyn MainThreadOnly + '_ {}
 impl ThreadKind for dyn MainThreadOnly + '_ {
     const __DYN_INCOMPATIBLE: () = ();
 }
+
+/// The allowed values in [`ClassType::Init`].
+///
+/// One of [`InitAvailable`] or [`InitUnavailable`].
+pub trait InitKind: private::SealedInitKind {}
+
+/// The value of [`ClassType::Init`] for classes whose `init` may be called.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum InitAvailable {}
+
+/// The value of [`ClassType::Init`] for classes whose `init` may not be
+/// called, e.g. because it is marked `NS_UNAVAILABLE`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum InitUnavailable {}
+
+impl private::SealedInitKind for InitAvailable {}
+impl InitKind for InitAvailable {}
+
+impl private::SealedInitKind for InitUnavailable {}
+impl InitKind for InitUnavailable {}
+
+/// Implemented for [`InitAvailable`], i.e. if `init` may be called.
+#[diagnostic::on_unimplemented(
+    message = "`init` may not be called on the superclass",
+    label = "the superclass' `init` is unavailable",
+    note = "use one of the superclass' other initializers instead"
+)]
+pub trait IsInitAvailable: InitKind {}
+
+impl IsInitAvailable for InitAvailable {}
 
 #[cfg(test)]
 mod tests {

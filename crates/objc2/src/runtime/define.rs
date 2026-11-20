@@ -888,6 +888,7 @@ mod tests {
         unsafe impl<T> ClassType for GenericDefineClass<T> {
             type Super = NSObject;
             type ThreadKind = <Self::Super as ClassType>::ThreadKind;
+            type Init = <Self::Super as ClassType>::Init;
             const NAME: &'static CStr =
                 unsafe { CStr::from_bytes_with_nul_unchecked(b"GenericDefineClass\0") };
 

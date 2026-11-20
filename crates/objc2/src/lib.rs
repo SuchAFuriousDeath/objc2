@@ -138,7 +138,8 @@ pub use self::downcast::DowncastTarget;
 pub use self::encode::{Encode, Encoding, RefEncode};
 pub use self::main_thread_marker::MainThreadMarker;
 pub use self::top_level_traits::{
-    AnyThread, ClassType, DefinedClass, Ivars, MainThreadOnly, Message, ProtocolType, ThreadKind,
+    AnyThread, ClassType, DefinedClass, InitAvailable, InitKind, InitUnavailable, IsInitAvailable,
+    Ivars, MainThreadOnly, Message, ProtocolType, ThreadKind,
 };
 
 // Note: While this is not public, it is still a breaking change to change,

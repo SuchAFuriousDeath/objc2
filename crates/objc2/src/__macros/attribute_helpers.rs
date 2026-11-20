@@ -601,6 +601,9 @@ macro_rules! __extract_attributes {
         // The contents of the `thread_kind` attribute, if any.
         // ($($thread_kind:path)?)
         //
+        // The contents of the `init` attribute, if any.
+        // ($($init:path)?)
+        //
         // The contents of the `name` attribute, if any.
         // ($($name:expr)?)
         //
@@ -619,6 +622,7 @@ macro_rules! __extract_attributes {
             // No already parsed attributes
             () // superclasses
             () // thread_kind
+            () // init
             () // name
             () // derive
             () // attr_item
@@ -640,6 +644,7 @@ macro_rules! __extract_attributes_inner {
 
         ($($superclasses:tt)*)
         ($($thread_kind:tt)*)
+        ($($init:tt)*)
         ($($name:tt)*)
         ($($derives:tt)*)
         ($($attr_item:tt)*)
@@ -655,6 +660,7 @@ macro_rules! __extract_attributes_inner {
             // Append attributes to the end of the macro arguments
             ($($superclasses)*)
             ($($thread_kind)*)
+            ($($init)*)
             ($($name)*)
             ($($derives)*)
             ($($attr_item)*)
@@ -671,6 +677,7 @@ macro_rules! __extract_attributes_inner {
 
         ($($superclasses:tt)*)
         ($($thread_kind:tt)*)
+        ($($init:tt)*)
         ($($name:tt)*)
         ($($derives:tt)*)
         ($($attr_item:tt)*)
@@ -685,6 +692,7 @@ macro_rules! __extract_attributes_inner {
 
             (unsafe $($parsed)*)
             ($($thread_kind)*)
+            ($($init)*)
             ($($name)*)
             ($($derives)*)
             ($($attr_item)*)
@@ -703,6 +711,7 @@ macro_rules! __extract_attributes_inner {
 
         ($($superclasses:tt)*)
         ($($thread_kind:tt)*)
+        ($($init:tt)*)
         ($($name:tt)*)
         ($($derives:tt)*)
         ($($attr_item:tt)*)
@@ -717,6 +726,7 @@ macro_rules! __extract_attributes_inner {
 
             (unsafe $parsed)
             ($($thread_kind)*)
+            ($($init)*)
             ($($name)*)
             ($($derives)*)
             ($($attr_item)*)
@@ -736,6 +746,7 @@ macro_rules! __extract_attributes_inner {
 
         ($($superclasses:tt)*)
         ($($thread_kind:tt)*)
+        ($($init:tt)*)
         ($($name:tt)*)
         ($($derives:tt)*)
         ($($attr_item:tt)*)
@@ -750,6 +761,7 @@ macro_rules! __extract_attributes_inner {
 
             (safe $($parsed)*)
             ($($thread_kind)*)
+            ($($init)*)
             ($($name)*)
             ($($derives)*)
             ($($attr_item)*)
@@ -768,6 +780,7 @@ macro_rules! __extract_attributes_inner {
 
         ($($superclasses:tt)*)
         ($($thread_kind:tt)*)
+        ($($init:tt)*)
         ($($name:tt)*)
         ($($derives:tt)*)
         ($($attr_item:tt)*)
@@ -782,6 +795,7 @@ macro_rules! __extract_attributes_inner {
 
             (safe $parsed)
             ($($thread_kind)*)
+            ($($init)*)
             ($($name)*)
             ($($derives)*)
             ($($attr_item)*)
@@ -801,6 +815,7 @@ macro_rules! __extract_attributes_inner {
 
         ($($superclasses:tt)*)
         ($($thread_kind:tt)*)
+        ($($init:tt)*)
         ($($name:tt)*)
         ($($derives:tt)*)
         ($($attr_item:tt)*)
@@ -814,6 +829,42 @@ macro_rules! __extract_attributes_inner {
             ($($rest)*)
 
             ($($superclasses)*)
+            ($($parsed)+)
+            ($($init)*)
+            ($($name)*)
+            ($($derives)*)
+            ($($attr_item)*)
+            ($($attr_impl)*)
+
+            ($out_macro)
+            $($out_args)*
+        }
+    };
+
+    // `init = ...`
+    {
+        (
+            #[init = $($parsed:tt)+]
+            $($rest:tt)*
+        )
+
+        ($($superclasses:tt)*)
+        ($($thread_kind:tt)*)
+        ($($init:tt)*)
+        ($($name:tt)*)
+        ($($derives:tt)*)
+        ($($attr_item:tt)*)
+        ($($attr_impl:tt)*)
+
+        ($out_macro:path)
+        $($out_args:tt)*
+    } => {
+        $crate::__handle_duplicate!("init"; $($init)*);
+        $crate::__extract_attributes_inner! {
+            ($($rest)*)
+
+            ($($superclasses)*)
+            ($($thread_kind)*)
             ($($parsed)+)
             ($($name)*)
             ($($derives)*)
@@ -834,6 +885,7 @@ macro_rules! __extract_attributes_inner {
 
         ($($superclasses:tt)*)
         ($($thread_kind:tt)*)
+        ($($init:tt)*)
         ($($name:tt)*)
         ($($derives:tt)*)
         ($($attr_item:tt)*)
@@ -848,6 +900,7 @@ macro_rules! __extract_attributes_inner {
 
             ($($superclasses)*)
             ($($thread_kind)*)
+            ($($init)*)
             ($($parsed)+)
             ($($derives)*)
             ($($attr_item)*)
@@ -867,6 +920,7 @@ macro_rules! __extract_attributes_inner {
 
         ($($superclasses:tt)*)
         ($($thread_kind:tt)*)
+        ($($init:tt)*)
         ($($name:tt)*)
         ($($derives:tt)*)
         ($($attr_item:tt)*)
@@ -890,6 +944,7 @@ macro_rules! __extract_attributes_inner {
 
             ($($superclasses)*)
             ($($thread_kind)*)
+            ($($init)*)
             ($($name)*)
             ($($derives)*)
             ($($attr_item)*)
@@ -909,6 +964,7 @@ macro_rules! __extract_attributes_inner {
 
         ($($superclasses:tt)*)
         ($($thread_kind:tt)*)
+        ($($init:tt)*)
         ($($name:tt)*)
         ($($derives:tt)*)
         ($($attr_item:tt)*)
@@ -922,6 +978,7 @@ macro_rules! __extract_attributes_inner {
 
             ($($superclasses)*)
             ($($thread_kind)*)
+            ($($init)*)
             ($($name)*)
             // Combine all #[derive(...)] into one list.
             ($($derives)*, $($parsed)*)
@@ -942,6 +999,7 @@ macro_rules! __extract_attributes_inner {
 
         ($($superclasses:tt)*)
         ($($thread_kind:tt)*)
+        ($($init:tt)*)
         ($($name:tt)*)
         ($($derives:tt)*)
         ($($attr_item:tt)*)
@@ -955,6 +1013,7 @@ macro_rules! __extract_attributes_inner {
 
             ($($superclasses)*)
             ($($thread_kind)*)
+            ($($init)*)
             ($($name)*)
             ($($derives)*)
             (
@@ -981,6 +1040,7 @@ macro_rules! __extract_attributes_inner {
 
         ($($superclasses:tt)*)
         ($($thread_kind:tt)*)
+        ($($init:tt)*)
         ($($name:tt)*)
         ($($derives:tt)*)
         ($($attr_item:tt)*)
@@ -994,6 +1054,7 @@ macro_rules! __extract_attributes_inner {
 
             ($($superclasses)*)
             ($($thread_kind)*)
+            ($($init)*)
             ($($name)*)
             ($($derives)*)
             (
@@ -1021,6 +1082,7 @@ macro_rules! __extract_attributes_inner {
 
         ($($superclasses:tt)*)
         ($($thread_kind:tt)*)
+        ($($init:tt)*)
         ($($name:tt)*)
         ($($derives:tt)*)
         ($($attr_item:tt)*)
@@ -1034,6 +1096,7 @@ macro_rules! __extract_attributes_inner {
 
             ($($superclasses)*)
             ($($thread_kind)*)
+            ($($init)*)
             ($($name)*)
             ($($derives)*)
             // Pass all other attributes onwards to the struct.
