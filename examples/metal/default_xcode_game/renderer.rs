@@ -101,7 +101,7 @@ impl Renderer {
         let color_map = load_color_map(&device);
 
         let this = Self::alloc(view.mtm());
-        let this = this.set_ivars(Ivars::<Self> {
+        this.set_ivars(Ivars::<Self> {
             in_flight_semaphore,
             command_queue,
             pipeline_state,
@@ -114,8 +114,8 @@ impl Renderer {
             uniform_buffer_address: Cell::new(None),
             projection_matrix: Cell::new(Float4x4::new([0.0; 4], [0.0; 4], [0.0; 4], [0.0; 4])),
             rotation: Cell::new(0.0),
-        });
-        unsafe { msg_send![super(this), init] }
+        })
+        .init()
     }
 }
 

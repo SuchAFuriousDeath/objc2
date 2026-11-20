@@ -352,9 +352,7 @@ pub trait DefinedClass: ClassType {
 /// impl MyClass {
 ///     fn new(x: i32) -> Retained<Self> {
 ///         // Initialize the class' ivars.
-///         let this = Self::alloc().set_ivars(Ivars::<Self> { x });
-///         // Initialize superclass.
-///         unsafe { msg_send![super(this), init] }
+///         Self::alloc().set_ivars(Ivars::<Self> { x }).init()
 ///     }
 /// }
 ///
@@ -380,12 +378,10 @@ pub trait DefinedClass: ClassType {
 ///     impl MyClass {
 ///         #[unsafe(method(init))]
 ///         fn init(this: Allocated<Self>) -> Retained<Self> {
-///             let this = this.set_ivars(Ivars::<Self> {
+///             this.set_ivars(Ivars::<Self> {
 ///                 // Initialize to some default value.
 ///                 x: 42,
-///             });
-///             // Initialize superclass.
-///             unsafe { msg_send![super(this), init] }
+///             }).init()
 ///         }
 ///     }
 /// );

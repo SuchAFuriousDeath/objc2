@@ -12,7 +12,7 @@ use std::hint::black_box;
 use arbitrary::Arbitrary;
 use objc2::rc::{autoreleasepool, Retained};
 use objc2::runtime::AnyObject;
-use objc2::{define_class, msg_send, AnyThread, ClassType, Ivars, Message};
+use objc2::{define_class, AnyThread, ClassType, Ivars, Message};
 use objc2_foundation::{
     CopyingHelper, NSCopying, NSMutableDictionary, NSMutableSet, NSObject, NSObjectProtocol,
     NSUInteger, NSZone,
@@ -81,12 +81,13 @@ unsafe impl CopyingHelper for Key {
 
 impl Key {
     fn new(index: KeyIndex) -> Retained<Self> {
-        let key = Key::alloc().set_ivars(Ivars::<Self> {
-            index,
-            hash: Cell::new(0),
-            equal_to_mask: Cell::new(0),
-        });
-        unsafe { msg_send![super(key), init] }
+        Key::alloc()
+            .set_ivars(Ivars::<Self> {
+                index,
+                hash: Cell::new(0),
+                equal_to_mask: Cell::new(0),
+            })
+            .init()
     }
 
     fn validate(&self) {

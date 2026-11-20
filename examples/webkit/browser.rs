@@ -4,7 +4,7 @@
 use core::cell::OnceCell;
 
 use objc2::{
-    define_class, msg_send,
+    define_class,
     rc::Retained,
     runtime::{AnyObject, ProtocolObject, Sel},
     sel, Ivars, MainThreadMarker, MainThreadOnly,
@@ -270,15 +270,15 @@ define_class!(
 impl Delegate {
     fn new(mtm: MainThreadMarker) -> Retained<Self> {
         let this = Self::alloc(mtm);
-        let this = this.set_ivars(Ivars::<Self> {
+        this.set_ivars(Ivars::<Self> {
             #[cfg(target_os = "macos")]
             nav_url: Default::default(),
             #[cfg(target_os = "macos")]
             web_view: Default::default(),
             #[cfg(target_os = "macos")]
             window: Default::default(),
-        });
-        unsafe { msg_send![super(this), init] }
+        })
+        .init()
     }
 }
 

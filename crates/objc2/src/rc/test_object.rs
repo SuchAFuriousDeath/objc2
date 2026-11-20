@@ -108,8 +108,7 @@ define_class!(
         #[unsafe(method(init))]
         unsafe fn init(this: Allocated<Self>) -> Retained<Self> {
             TEST_DATA.with(|data| data.borrow_mut().init += 1);
-            let this = this.set_ivars(Ivars::<RcTestObject> {});
-            unsafe { msg_send![super(this), init] }
+            this.set_ivars(Ivars::<RcTestObject> {}).init()
         }
 
         #[unsafe(method(initReturningNull))]

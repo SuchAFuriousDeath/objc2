@@ -3,7 +3,7 @@
 #![cfg_attr(feature = "unstable-darwin-objc", feature(darwin_objc))]
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
-use objc2::{define_class, msg_send, Ivars, MainThreadMarker, MainThreadOnly};
+use objc2::{define_class, Ivars, MainThreadMarker, MainThreadOnly};
 #[cfg(target_os = "macos")]
 use objc2_app_kit::{NSApplication, NSApplicationActivationPolicy, NSApplicationDelegate};
 use objc2_foundation::{
@@ -54,15 +54,15 @@ define_class!(
 impl AppDelegate {
     fn new(ivar: u8, another_ivar: bool, mtm: MainThreadMarker) -> Retained<Self> {
         let this = Self::alloc(mtm);
-        let this = this.set_ivars(Ivars::<Self> {
+        this.set_ivars(Ivars::<Self> {
             ivar,
             another_ivar,
             box_ivar: Box::new(2),
             maybe_box_ivar: None,
             id_ivar: NSString::from_str("abc"),
             maybe_retained_ivar: Some(ns_string!("def").copy()),
-        });
-        unsafe { msg_send![super(this), init] }
+        })
+        .init()
     }
 }
 

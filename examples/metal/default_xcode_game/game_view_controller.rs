@@ -51,10 +51,9 @@ impl GameViewController {
     // FIXME: Make it possible to avoid this boilerplate.
     pub fn new(mtm: MainThreadMarker) -> Retained<Self> {
         let this = Self::alloc(mtm);
-        let this = this.set_ivars(Ivars::<Self> {
+        this.set_ivars(Ivars::<Self> {
             renderer: Default::default(),
-        });
-        // SAFETY: `GameViewController` is safe to initialize.
-        unsafe { msg_send![super(this), init] }
+        })
+        .init()
     }
 }

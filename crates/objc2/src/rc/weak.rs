@@ -427,7 +427,7 @@ mod tests {
     use super::*;
     use crate::rc::{RcTestObject, ThreadTestData};
     use crate::runtime::NSObject;
-    use crate::{define_class, msg_send, AnyThread, Ivars};
+    use crate::{define_class, AnyThread, Ivars};
 
     #[test]
     fn test_weak() {
@@ -537,12 +537,12 @@ mod tests {
 
     impl WeakClass {
         fn new(obj: &RcTestObject) -> Retained<Self> {
-            let this = Self::alloc().set_ivars(Ivars::<Self> {
-                boxed: Weak::new(obj),
-                plain: Weak::empty(),
-            });
-            // Call `NSObject`'s `init` method.
-            let this: Retained<Self> = unsafe { msg_send![super(this), init] };
+            let this: Retained<Self> = Self::alloc()
+                .set_ivars(Ivars::<Self> {
+                    boxed: Weak::new(obj),
+                    plain: Weak::empty(),
+                })
+                .init();
             // SAFETY: Ivars are pinned.
             unsafe { Pin::new_unchecked(this.plain()) }.store(Some(obj));
             this

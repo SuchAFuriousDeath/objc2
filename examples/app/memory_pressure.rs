@@ -105,9 +105,7 @@ mod uikit {
     use block2::RcBlock;
     use objc2::rc::{Allocated, Retained};
     use objc2::runtime::{NSObject, ProtocolObject};
-    use objc2::{
-        define_class, msg_send, ClassType, Ivars, MainThreadMarker, MainThreadOnly, Message,
-    };
+    use objc2::{define_class, ClassType, Ivars, MainThreadMarker, MainThreadOnly, Message};
     use objc2_foundation::{ns_string, NSNotificationCenter, NSObjectProtocol, NSOperationQueue};
     use objc2_ui_kit::{
         UIApplication, UIApplicationDelegate, UIApplicationDidReceiveMemoryWarningNotification,
@@ -126,8 +124,7 @@ mod uikit {
             // Called by `UIApplication::main`.
             #[unsafe(method(init))]
             fn init(this: Allocated<Self>) -> Retained<Self> {
-                let this = this.set_ivars(Ivars::<Self> {});
-                unsafe { msg_send![super(this), init] }
+                this.set_ivars(Ivars::<Self> {}).init()
             }
         }
 
@@ -172,10 +169,10 @@ mod uikit {
             // Called to initialize the scene.
             #[unsafe(method(init))]
             fn init(this: Allocated<Self>) -> Retained<Self> {
-                let this = this.set_ivars(Ivars::<Self> {
+                this.set_ivars(Ivars::<Self> {
                     window_: RefCell::new(None),
-                });
-                unsafe { msg_send![super(this), init] }
+                })
+                .init()
             }
         }
 
@@ -229,8 +226,7 @@ mod uikit {
     impl ViewController {
         // Called by `UIApplication::main`.
         fn new(mtm: MainThreadMarker) -> Retained<Self> {
-            let this = Self::alloc(mtm).set_ivars(Ivars::<Self> {});
-            unsafe { msg_send![super(this), init] }
+            Self::alloc(mtm).set_ivars(Ivars::<Self> {}).init()
         }
     }
 

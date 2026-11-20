@@ -4,7 +4,7 @@ use std::cell::OnceCell;
 
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
-use objc2::{define_class, msg_send, sel, Ivars, MainThreadOnly};
+use objc2::{define_class, sel, Ivars, MainThreadOnly};
 #[cfg(target_os = "macos")]
 use objc2_app_kit::{
     NSApplication, NSApplicationActivationPolicy, NSApplicationDelegate, NSAutoresizingMaskOptions,
@@ -142,11 +142,11 @@ define_class!(
 #[cfg(target_os = "macos")]
 impl Delegate {
     fn new(mtm: MainThreadMarker) -> Retained<Self> {
-        let this = Self::alloc(mtm).set_ivars(Ivars::<Self> {
-            window: Default::default(),
-        });
-        // SAFETY: The signature of `NSObject`'s `init` method is correct.
-        unsafe { msg_send![super(this), init] }
+        Self::alloc(mtm)
+            .set_ivars(Ivars::<Self> {
+                window: Default::default(),
+            })
+            .init()
     }
 }
 

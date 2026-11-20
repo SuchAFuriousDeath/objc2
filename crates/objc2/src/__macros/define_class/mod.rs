@@ -368,12 +368,11 @@ pub use self::thunk::*;
 ///     unsafe impl NSCopying for MyCustomObject {
 ///         #[unsafe(method(copyWithZone:))]
 ///         fn copyWithZone(&self, _zone: Option<&NSZone>) -> Retained<Self> {
-///             let new = Self::alloc().set_ivars(Ivars::<Self> {
+///             Self::alloc().set_ivars(Ivars::<Self> {
 ///                 foo: *self.foo(),
 ///                 bar: *self.bar(),
 ///                 object: self.object().clone(),
-///             });
-///             unsafe { msg_send![super(new), init] }
+///             }).init()
 ///         }
 ///
 ///         // If we have tried to add other methods here, or had forgotten
@@ -391,13 +390,11 @@ pub use self::thunk::*;
 /// impl MyCustomObject {
 ///     fn new(foo: u8) -> Retained<Self> {
 ///         // Initialize instance variables.
-///         let this = Self::alloc().set_ivars(Ivars::<Self> {
+///         Self::alloc().set_ivars(Ivars::<Self> {
 ///             foo,
 ///             bar: 42,
 ///             object: NSObject::new(),
-///         });
-///         // Call `NSObject`'s `init` method.
-///         unsafe { msg_send![super(this), init] }
+///         }).init()
 ///     }
 /// }
 ///

@@ -2,7 +2,7 @@ use std::ptr::null_mut;
 
 use libc::{EINVAL, ENODEV};
 use objc2::{
-    define_class, msg_send,
+    define_class,
     rc::{Allocated, Retained},
     AnyThread, Ivars,
 };
@@ -29,8 +29,7 @@ define_class!(
             // A new process, and thus a new `FileSystem`,
             // will be created (probably) every mount.
             trace!("init");
-            let this = this.set_ivars(Ivars::<Self> {});
-            unsafe { msg_send![super(this), init] }
+            this.set_ivars(Ivars::<Self> {}).init()
         }
     }
 

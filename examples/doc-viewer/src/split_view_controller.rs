@@ -32,10 +32,7 @@ impl SplitViewController {
     pub fn new(mtm: MainThreadMarker) -> Retained<Self> {
         let this = Self::alloc(mtm);
 
-        let this = this.set_ivars(Ivars::<Self> {});
-
-        // SAFETY: `SplitViewController` is safe to initialize.
-        let this: Retained<Self> = unsafe { msg_send![super(this), init] };
+        let this: Retained<Self> = this.set_ivars(Ivars::<Self> {}).init();
 
         let detail_view_controller = DetailViewController::new(mtm);
         let navigator = Navigator::new(mtm, &detail_view_controller);

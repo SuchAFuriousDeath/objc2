@@ -31,7 +31,7 @@ impl UIApplication {
     /// ```no_run
     /// use objc2::MainThreadMarker;
     /// use objc2::rc::{Allocated, Retained};
-    /// use objc2::{define_class, msg_send, ClassType, Ivars, MainThreadOnly};
+    /// use objc2::{define_class, ClassType, Ivars, MainThreadOnly};
     /// use objc2_foundation::{NSNotification, NSObject, NSObjectProtocol, NSString};
     /// use objc2_ui_kit::{UIApplication, UIApplicationDelegate};
     ///
@@ -50,8 +50,7 @@ impl UIApplication {
     ///         // Called by `UIApplication::main`.
     ///         #[unsafe(method(init))]
     ///         fn init(this: Allocated<Self>) -> Retained<Self> {
-    ///             let this = this.set_ivars(Ivars::<Self> {});
-    ///             unsafe { msg_send![super(this), init] }
+    ///             this.set_ivars(Ivars::<Self> {}).init()
     ///         }
     ///     }
     ///

@@ -10,8 +10,8 @@
 use std::{cell::OnceCell, ptr::NonNull};
 
 use objc2::{
-    define_class, msg_send, rc::Retained, runtime::ProtocolObject, Ivars, MainThreadMarker,
-    MainThreadOnly, Message,
+    define_class, rc::Retained, runtime::ProtocolObject, Ivars, MainThreadMarker, MainThreadOnly,
+    Message,
 };
 #[cfg(target_os = "macos")]
 use objc2_app_kit::{
@@ -304,12 +304,12 @@ define_class!(
 impl Delegate {
     fn new(mtm: MainThreadMarker) -> Retained<Self> {
         let this = Self::alloc(mtm);
-        let this = this.set_ivars(Ivars::<Self> {
+        this.set_ivars(Ivars::<Self> {
             renderer: OnceCell::default(),
             #[cfg(target_os = "macos")]
             window: OnceCell::default(),
-        });
-        unsafe { msg_send![super(this), init] }
+        })
+        .init()
     }
 }
 

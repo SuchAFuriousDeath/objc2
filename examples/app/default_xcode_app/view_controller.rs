@@ -40,8 +40,6 @@ impl ViewController {
     // FIXME: Make it possible to avoid this boilerplate.
     pub fn new(mtm: MainThreadMarker) -> Retained<Self> {
         let this = Self::alloc(mtm);
-        let this = this.set_ivars(Ivars::<Self> {});
-        // SAFETY: `ViewController` is safe to initialize.
-        unsafe { msg_send![super(this), init] }
+        this.set_ivars(Ivars::<Self> {}).init()
     }
 }

@@ -2,7 +2,7 @@ use std::cell::OnceCell;
 
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
-use objc2::{define_class, msg_send, sel, Ivars, MainThreadMarker, MainThreadOnly};
+use objc2::{define_class, sel, Ivars, MainThreadMarker, MainThreadOnly};
 use objc2_app_kit::{
     NSApplication, NSApplicationActivationPolicy, NSApplicationDelegate, NSMenu, NSMenuItem,
     NSWindow, NSWindowController,
@@ -74,12 +74,11 @@ impl AppDelegate {
     // FIXME: Make it possible to avoid this boilerplate.
     fn new(mtm: MainThreadMarker) -> Retained<Self> {
         let this = Self::alloc(mtm);
-        let this = this.set_ivars(Ivars::<Self> {
+        this.set_ivars(Ivars::<Self> {
             window: Default::default(),
             window_controller: Default::default(),
-        });
-        // SAFETY: `AppDelegate` is safe to initialize.
-        unsafe { msg_send![super(this), init] }
+        })
+        .init()
     }
 }
 

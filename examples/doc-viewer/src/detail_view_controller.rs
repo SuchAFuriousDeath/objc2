@@ -40,13 +40,13 @@ impl DetailViewController {
 
         let lmdb = Lmdb::from_external_dir(&external_dir).unwrap();
 
-        let this = Self::alloc(mtm).set_ivars(Ivars::<Self> {
-            sqlite_db,
-            blobs,
-            lmdb,
-        });
-        // SAFETY: `DetailViewController` is safe to initialize.
-        unsafe { msg_send![super(this), init] }
+        Self::alloc(mtm)
+            .set_ivars(Ivars::<Self> {
+                sqlite_db,
+                blobs,
+                lmdb,
+            })
+            .init()
     }
 
     pub fn switch_to(&self, navigator_id: u32, item: &NavigatorItem<'_>) {

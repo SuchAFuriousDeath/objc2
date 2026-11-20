@@ -6,7 +6,7 @@ use block2::RcBlock;
 use dispatch2::MainThreadBound;
 use objc2::rc::Retained;
 use objc2::runtime::{AnyObject, ProtocolObject};
-use objc2::{define_class, msg_send, AnyThread, Ivars, MainThreadMarker, MainThreadOnly, Message};
+use objc2::{define_class, AnyThread, Ivars, MainThreadMarker, MainThreadOnly, Message};
 use objc2_app_kit::{
     NSColor, NSControlTextEditingDelegate, NSFont, NSImage, NSImageScaling, NSImageView,
     NSLineBreakMode, NSOutlineView, NSOutlineViewDataSource, NSOutlineViewDelegate,
@@ -37,14 +37,13 @@ impl Navigator {
         image_module.setTemplate(true);
 
         let this = Self::alloc(mtm);
-        let this = this.set_ivars(Ivars::<Self> {
+        this.set_ivars(Ivars::<Self> {
             tree,
             _observer: Cell::new(None),
             detail_view_controller: detail_view_controller.retain(),
             image_module,
-        });
-        // SAFETY: The controller is safe to initialize.
-        unsafe { msg_send![super(this), init] }
+        })
+        .init()
     }
 
     pub fn outline_view(&self) -> Retained<NSOutlineView> {

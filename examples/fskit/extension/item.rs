@@ -59,11 +59,12 @@ impl Item {
         let _: () = unsafe { msg_send![&*attributes, setModifyTime: timespec] };
         let _: () = unsafe { msg_send![&*attributes, setAccessTime: timespec] };
 
-        let this = Self::alloc().set_ivars(Ivars::<Self> {
-            attributes,
-            // Set other item state.
-        });
-        unsafe { msg_send![super(this), init] }
+        Self::alloc()
+            .set_ivars(Ivars::<Self> {
+                attributes,
+                // Set other item state.
+            })
+            .init()
     }
 
     pub(crate) fn set_attributes(&self, _new_attributes: &FSItemSetAttributesRequest) {}
