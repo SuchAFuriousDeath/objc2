@@ -1127,6 +1127,7 @@ impl Method {
         matches!(self.memory_management, MemoryManagement::RetainedInit)
             && !self.is_class
             && self.selector != "init"
+            && self.result_type.is_instancetype()
             && self.availability.is_available()
             && !self.requires_main_thread_marker
             && self

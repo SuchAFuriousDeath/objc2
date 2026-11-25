@@ -48,7 +48,8 @@ jobs:
     - name: Run header translator on base commit (without feature)
       continue-on-error: true
       run: |
-        git checkout --detach HEAD~1
+        git fetch --depth=1 origin ceaa107dc0c289810f4a8d0ef0f9e7b6562cd6ea
+        git checkout --detach ceaa107dc0c289810f4a8d0ef0f9e7b6562cd6ea
         git submodule update
         cargo run -pheader-translator --bin=header-translator --release all > out/translator-base.log 2>&1 || echo "base translator failed: $?"
         grep -cE "ERROR" out/translator-base.log || true
@@ -90,6 +91,13 @@ jobs:
           echo "== all frameworks: $(cat generated/*/*.rs | grep -cE '^pub trait [A-Za-z0-9_]+Init<T, I>') Init traits"
         } > out/init-traits.txt || true
         grep '^==' out/init-traits.txt || true
+
+    - name: Use pinned nightly for checks
+      if: always()
+      run: |
+        rustup override unset
+        rustup show active-toolchain || rustup toolchain install
+        rustc --version
 
     - name: cargo check (default features)
       if: always()
