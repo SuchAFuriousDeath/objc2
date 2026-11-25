@@ -2437,6 +2437,23 @@ impl Stmt {
         mapping
     }
 
+    /// The `...Init` trait emitted next to a class with designated
+    /// initializers, which must be re-exported along with the class.
+    pub(crate) fn partial_init_trait(&self) -> Option<ItemIdentifier> {
+        match self {
+            Self::ClassDecl {
+                id,
+                skipped: false,
+                generics,
+                designated_initializers,
+                ..
+            } if !designated_initializers.is_empty() && generics.is_empty() => {
+                Some(id.clone().map_name(|name| format!("{name}Init")))
+            }
+            _ => None,
+        }
+    }
+
     pub(crate) fn provided_item(&self) -> Option<ItemIdentifier> {
         match self {
             Self::ClassDecl { id, skipped, .. } => {
@@ -2912,8 +2929,8 @@ impl Stmt {
 
                     // Let subclasses call the designated initializers on
                     // `super` through `PartialInit`.
-                    if !designated_initializers.is_empty() && generics.is_empty() {
-                        let trait_name = format!("{}Init", id.name);
+                    if let Some(trait_id) = self.partial_init_trait() {
+                        let trait_name = trait_id.name;
 
                         writeln!(f)?;
                         write!(f, "{}", self.cfg_gate_ln(config))?;

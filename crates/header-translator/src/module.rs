@@ -212,6 +212,20 @@ impl Module {
                             item.name,
                         )?;
                     }
+
+                    if let Some(trait_id) = stmt.partial_init_trait() {
+                        write!(
+                            f,
+                            "{}",
+                            cfg_gate_ln(
+                                [ItemTree::new(trait_id.clone(), stmt.required_items())],
+                                &[] as &[ItemTree],
+                                config,
+                                emission_location,
+                            )
+                        )?;
+                        writeln!(f, "pub use self::__{}::{};", clean_name(name), trait_id.name)?;
+                    }
                 }
             }
 

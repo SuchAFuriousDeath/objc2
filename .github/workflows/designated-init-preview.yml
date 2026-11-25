@@ -120,6 +120,19 @@ jobs:
         set -o pipefail
         cargo test -p objc2 --test partial_init_designated 2>&1 | tee out/test-partial-init.log
 
+    - name: Compile probes using the generated traits
+      if: always()
+      continue-on-error: true
+      run: |
+        cp ci-probe/*.rs framework-crates/objc2-app-kit/tests/
+        for f in ci-probe/*.rs; do
+          t=$(basename "$f" .rs)
+          echo "::group::$t"
+          cargo test -p objc2-app-kit --test "$t" --no-run > "out/probe-$t.log" 2>&1 && echo "$t: OK" || echo "$t: FAILED"
+          sed 's/\x1b\[[0-9;]*m//g' "out/probe-$t.log" | grep -E "^(error|warning)" -A15 | head -80
+          echo "::endgroup::"
+        done | tee out/probes-summary.txt
+
     - name: Upload
       if: always()
       uses: actions/upload-artifact@v4
