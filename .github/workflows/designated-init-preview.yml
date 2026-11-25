@@ -16,7 +16,7 @@ env:
 
 jobs:
   preview:
-    runs-on: macos-latest
+    runs-on: xcode-27 # Same as upstream's header-translator job
     timeout-minutes: 120
     steps:
     - uses: actions/checkout@v6
@@ -85,12 +85,11 @@ jobs:
         {
           for d in AppKit Foundation; do
             echo "== $d: $(cat generated/$d/*.rs | grep -cE '^pub trait [A-Za-z0-9_]+Init<T, I>') Init traits"
-            grep -HnE '^pub trait [A-Za-z0-9_]+Init<T, I>' generated/$d/*.rs
+            grep -HnE '^pub trait [A-Za-z0-9_]+Init<T, I>' generated/$d/*.rs || true
           done
           echo "== all frameworks: $(cat generated/*/*.rs | grep -cE '^pub trait [A-Za-z0-9_]+Init<T, I>') Init traits"
-        } > out/init-traits.txt
-        head -3 out/init-traits.txt
-        grep -c . out/init-traits.txt
+        } > out/init-traits.txt || true
+        grep '^==' out/init-traits.txt || true
 
     - name: cargo check (default features)
       if: always()
