@@ -124,6 +124,7 @@ jobs:
       if: always()
       continue-on-error: true
       run: |
+        mkdir -p framework-crates/objc2-app-kit/tests
         cp ci-probe/*.rs framework-crates/objc2-app-kit/tests/
         for f in ci-probe/*.rs; do
           t=$(basename "$f" .rs)
