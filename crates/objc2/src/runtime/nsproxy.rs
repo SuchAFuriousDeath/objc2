@@ -25,6 +25,9 @@ crate::__extern_class_impl_traits! {
     (AnyObject)
 }
 
+// SAFETY: `NSProxy` is a root class that isn't defined in Rust.
+unsafe impl crate::ExternClass for NSProxy {}
+
 unsafe impl ClassType for NSProxy {
     type Super = AnyObject;
     type ThreadKind = dyn AnyThread;

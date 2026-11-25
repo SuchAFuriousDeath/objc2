@@ -1,4 +1,5 @@
 use core::ffi::CStr;
+use core::marker::PhantomData;
 use core::ptr::NonNull;
 
 use crate::__macros::define_class::get_initialized_ivar_ptr;
@@ -499,6 +500,7 @@ mod private {
     pub trait SealedMainThreadOnly {}
     pub trait SealedThreadKind {}
     pub trait SealedInitKind {}
+    pub trait SealedInherits<C: ?Sized, I> {}
 }
 
 /// Marker trait for classes (and protocols) that are usable from any thread,
@@ -694,6 +696,97 @@ impl InitKind for InitUnavailable {}
 pub trait IsInitAvailable: InitKind {}
 
 impl IsInitAvailable for InitAvailable {}
+
+/// Marker trait for classes that aren't defined in Rust, i.e. those declared
+/// with [`extern_class!`](crate::extern_class).
+///
+/// Unlike classes created with [`define_class!`](crate::define_class), these
+/// follow Objective-C's rules for designated initializers: a designated
+/// initializer they inherit from a superclass fully initializes them. This
+/// makes it safe for a subclass to call such an inherited initializer on
+/// `super`, while a class defined in Rust in between would skip initializing
+/// its ivars.
+///
+/// # Safety
+///
+/// The class and all of its superclasses must not be defined with
+/// `define_class!`.
+pub unsafe trait ExternClass: ClassType {}
+
+/// The [`Inherits`] index for a class itself.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum Here {}
+
+/// The [`Inherits`] index for a superclass that is `I` further up the
+/// inheritance chain.
+#[derive(Debug)]
+pub struct There<I>(PhantomData<I>);
+
+/// Marker trait for classes that are `C` or a (transitive) subclass of `C`.
+///
+/// This is derived entirely from [`ClassType::Super`], so it's implemented
+/// automatically for every class, and holds for subclasses at any depth.
+/// It's sealed, and can't be implemented in any other way.
+///
+/// `I` is an index that keeps the implementation for the class itself and
+/// the one for its superclasses apart. It's always inferred, so use it as a
+/// generic parameter:
+///
+/// ```
+/// use objc2::runtime::NSObject;
+/// use objc2::{define_class, Inherits};
+///
+/// define_class!(
+///     #[unsafe(super(NSObject))]
+///     struct Parent;
+/// );
+///
+/// define_class!(
+///     #[unsafe(super(Parent))]
+///     struct Child;
+/// );
+///
+/// fn assert_inherits<T: Inherits<C, I>, C, I>() {}
+///
+/// assert_inherits::<Child, Child, _>();
+/// assert_inherits::<Child, Parent, _>();
+/// assert_inherits::<Child, NSObject, _>();
+/// ```
+///
+/// A class doesn't inherit from its subclasses:
+///
+/// ```compile_fail
+/// use objc2::runtime::NSObject;
+/// use objc2::{define_class, Inherits};
+///
+/// define_class!(
+///     #[unsafe(super(NSObject))]
+///     struct Parent;
+/// );
+///
+/// fn assert_inherits<T: Inherits<C, I>, C, I>() {}
+///
+/// assert_inherits::<NSObject, Parent, _>();
+/// ```
+pub trait Inherits<C: ?Sized, I>: ClassType + private::SealedInherits<C, I> {}
+
+impl<T: ?Sized + ClassType> private::SealedInherits<T, Here> for T {}
+impl<T: ?Sized + ClassType> Inherits<T, Here> for T {}
+
+impl<T, C, I> private::SealedInherits<C, There<I>> for T
+where
+    T: ?Sized + ClassType,
+    T::Super: Inherits<C, I>,
+    C: ?Sized,
+{
+}
+impl<T, C, I> Inherits<C, There<I>> for T
+where
+    T: ?Sized + ClassType,
+    T::Super: Inherits<C, I>,
+    C: ?Sized,
+{
+}
 
 #[cfg(test)]
 mod tests {

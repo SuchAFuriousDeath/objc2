@@ -1,0 +1,121 @@
+name: Designated init preview
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+    - designated-init-ci
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+  MACOSX_DEPLOYMENT_TARGET: 10.12
+
+jobs:
+  preview:
+    runs-on: macos-latest
+    timeout-minutes: 120
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        submodules: true
+        fetch-depth: 2
+
+    - name: Select Xcode
+      run: |
+        ls -d /Applications/Xcode*.app
+        if [ -d /Applications/Xcode_27.1.app ]; then
+          X=/Applications/Xcode_27.1.app
+        else
+          X=$(ls -d /Applications/Xcode_*.app | grep -v beta | sort -V | tail -1)
+        fi
+        echo "DEVELOPER_DIR=$X/Contents/Developer" >> "$GITHUB_ENV"
+        echo "Using $X"
+
+    - name: Use stable Rust
+      run: |
+        rustup override set stable
+        rustup component add rustfmt
+        rustc --version
+        xcrun --show-sdk-version
+
+    - name: Prepare output dir
+      run: mkdir -p out
+
+    - name: Run header translator on base commit (without feature)
+      continue-on-error: true
+      run: |
+        git checkout --detach HEAD~1
+        git submodule update
+        cargo run -pheader-translator --bin=header-translator --release all > out/translator-base.log 2>&1 || echo "base translator failed: $?"
+        grep -cE "ERROR" out/translator-base.log || true
+        git -C generated add -A
+        git -C generated -c user.name=ci -c user.email=ci@example.com commit -q -m base --allow-empty
+        git diff > out/base-repo-changes.diff || true
+        git reset --hard -q
+        git checkout --detach "$GITHUB_SHA"
+
+    - name: Run header translator with feature
+      continue-on-error: true
+      run: |
+        set +e
+        cargo run -pheader-translator --bin=header-translator --release all > out/translator-feature.log 2>&1
+        echo "feature translator exit: $?"
+        grep -cE "ERROR" out/translator-feature.log
+        grep -nE "panicked|^error" out/translator-feature.log | head -50
+
+    - name: Collect diffs and files
+      if: always()
+      run: |
+        PINNED=$(git ls-tree HEAD generated | awk '{print $3}')
+        git -C generated diff HEAD > out/feature-only.diff || true
+        git -C generated diff "$PINNED" > out/full-vs-committed.diff || true
+        git -C generated diff --stat HEAD > out/feature-only.stat || true
+        git diff -- . ':!generated' > out/repo-changes.diff || true
+        mkdir -p out/files
+        for f in AppKit/NSView.rs AppKit/NSButton.rs AppKit/NSControl.rs AppKit/NSResponder.rs \
+                 AppKit/NSWindow.rs AppKit/NSViewController.rs AppKit/NSCell.rs \
+                 Foundation/NSObject.rs Foundation/NSException.rs Foundation/NSString.rs \
+                 Foundation/NSArray.rs Foundation/NSCoder.rs Foundation/NSError.rs; do
+          [ -f "generated/$f" ] && { mkdir -p "out/files/$(dirname "$f")"; cp "generated/$f" "out/files/$f"; }
+        done
+        {
+          for d in AppKit Foundation; do
+            echo "== $d: $(cat generated/$d/*.rs | grep -cE '^pub trait [A-Za-z0-9_]+Init<T, I>') Init traits"
+            grep -HnE '^pub trait [A-Za-z0-9_]+Init<T, I>' generated/$d/*.rs
+          done
+          echo "== all frameworks: $(cat generated/*/*.rs | grep -cE '^pub trait [A-Za-z0-9_]+Init<T, I>') Init traits"
+        } > out/init-traits.txt
+        head -3 out/init-traits.txt
+        grep -c . out/init-traits.txt
+
+    - name: cargo check (default features)
+      if: always()
+      continue-on-error: true
+      run: |
+        set -o pipefail
+        cargo check -p objc2-app-kit -p objc2-foundation 2>&1 | tee out/check-default.log
+
+    - name: cargo check (all features)
+      if: always()
+      continue-on-error: true
+      run: |
+        set -o pipefail
+        cargo check -p objc2-app-kit -p objc2-foundation --all-features 2>&1 | tee out/check-all-features.log
+
+    - name: cargo test partial_init_designated
+      if: always()
+      continue-on-error: true
+      run: |
+        set -o pipefail
+        cargo test -p objc2 --test partial_init_designated 2>&1 | tee out/test-partial-init.log
+
+    - name: Upload
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: designated-init-output
+        path: out/

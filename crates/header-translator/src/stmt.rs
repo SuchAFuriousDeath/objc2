@@ -635,7 +635,8 @@ pub enum Stmt {
         availability: Availability,
         /// Superclass + their applied generics.
         superclasses: Vec<(ItemIdentifier, Vec<String>)>,
-        designated_initializers: Vec<String>,
+        /// Designated initializers that subclasses may call on `super`.
+        designated_initializers: Vec<Method>,
         derives: Derives,
         main_thread_only: bool,
         /// Whether the class itself declares `-init` as available or
@@ -959,6 +960,15 @@ impl Stmt {
                     false,
                     context,
                 );
+
+                let designated_initializers: Vec<Method> = methods
+                    .iter()
+                    .filter(|method| {
+                        designated_initializers.contains(&method.selector)
+                            && method.usable_on_partial_init()
+                    })
+                    .cloned()
+                    .collect();
 
                 // Unavailable methods are still parsed (they're only skipped
                 // when emitted), so this also finds `init NS_UNAVAILABLE`.
@@ -2760,7 +2770,7 @@ impl Stmt {
                     generics,
                     availability,
                     superclasses,
-                    designated_initializers: _,
+                    designated_initializers,
                     derives,
                     main_thread_only,
                     init_available,
@@ -2898,6 +2908,63 @@ impl Stmt {
                         writeln!(f)?;
                         write!(f, "{}", self.cfg_gate_ln(config))?;
                         add_generic_cast_helpers(f, id, generics, false)?;
+                    }
+
+                    // Let subclasses call the designated initializers on
+                    // `super` through `PartialInit`.
+                    if !designated_initializers.is_empty() && generics.is_empty() {
+                        let trait_name = format!("{}Init", id.name);
+
+                        writeln!(f)?;
+                        write!(f, "{}", self.cfg_gate_ln(config))?;
+                        writeln!(
+                            f,
+                            "/// The designated initializers of [`{}`], callable on a",
+                            id.name
+                        )?;
+                        writeln!(
+                            f,
+                            "/// [`PartialInit`] of any subclass, to initialize the superclass."
+                        )?;
+                        writeln!(f, "pub trait {trait_name}<T, I> {{")?;
+                        for method in designated_initializers {
+                            write!(
+                                f,
+                                "{}",
+                                method.fmt_partial_init(
+                                    self.required_items(),
+                                    id.location(),
+                                    config,
+                                    false
+                                )
+                            )?;
+                        }
+                        writeln!(f, "}}")?;
+
+                        writeln!(f)?;
+                        write!(f, "{}", self.cfg_gate_ln(config))?;
+                        writeln!(f, "impl<T, I> {trait_name}<T, I> for PartialInit<T>")?;
+                        writeln!(f, "where")?;
+                        writeln!(f, "    T: DefinedClass,")?;
+                        // `ExternClass` rules out classes defined in Rust
+                        // between `T` and the declaring class, since they'd
+                        // inherit the initializer without initializing their
+                        // ivars.
+                        writeln!(f, "    T::Super: Inherits<{}, I> + ExternClass,", id.name)?;
+                        writeln!(f, "{{")?;
+                        for method in designated_initializers {
+                            write!(
+                                f,
+                                "{}",
+                                method.fmt_partial_init(
+                                    self.required_items(),
+                                    id.location(),
+                                    config,
+                                    true
+                                )
+                            )?;
+                        }
+                        writeln!(f, "}}")?;
                     }
                 }
                 Self::ExternMethods {

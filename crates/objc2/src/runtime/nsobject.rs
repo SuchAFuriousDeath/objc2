@@ -79,6 +79,9 @@ unsafe impl Sync for private::ForDefinedSubclasses {}
 impl UnwindSafe for private::ForDefinedSubclasses {}
 impl RefUnwindSafe for private::ForDefinedSubclasses {}
 
+// SAFETY: `NSObject` is a root class that isn't defined in Rust.
+unsafe impl crate::ExternClass for NSObject {}
+
 unsafe impl ClassType for NSObject {
     type Super = AnyObject;
     type ThreadKind = dyn AnyThread;

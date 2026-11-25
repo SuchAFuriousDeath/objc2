@@ -1120,6 +1120,100 @@ impl Method {
         })
     }
 
+    /// Whether this designated initializer can be emitted as a method on
+    /// `PartialInit`, to be called on `super` by subclasses.
+    pub(crate) fn usable_on_partial_init(&self) -> bool {
+        // `init` is handled by `PartialInit::init` and `ClassType::Init`.
+        matches!(self.memory_management, MemoryManagement::RetainedInit)
+            && !self.is_class
+            && self.selector != "init"
+            && self.availability.is_available()
+            && !self.requires_main_thread_marker
+            && self
+                .arguments
+                .last()
+                .is_none_or(|(_, ty)| ty.argument_as_error_out(true).is_none())
+    }
+
+    /// Emits the method as a declaration in an `...Init` trait, or as its
+    /// implementation for `PartialInit<T>` if `with_body` is set.
+    pub(crate) fn fmt_partial_init<'a>(
+        &'a self,
+        implied_items: impl IntoIterator<Item = ItemTree> + Clone + 'a,
+        location: &'a Location,
+        config: &'a Config,
+        with_body: bool,
+    ) -> impl fmt::Display + 'a {
+        FormatterFn(move |f| {
+            let cfg_gate = cfg_gate_ln(
+                self.required_items(),
+                implied_items.clone(),
+                config,
+                location,
+            );
+            write!(f, "{cfg_gate}")?;
+            if with_body {
+                writeln!(f, "    #[inline]")?;
+                writeln!(f, "    #[track_caller]")?;
+            } else {
+                write!(f, "{}", self.documentation.fmt(None))?;
+                write!(f, "{}", self.availability)?;
+            }
+
+            write!(f, "    ")?;
+            if !self.safe {
+                write!(f, "unsafe ")?;
+            }
+            write!(f, "fn {}(self, ", handle_keyword(&self.fn_name))?;
+            for (param, arg_ty) in &self.arguments {
+                let param = param_name(param);
+                write!(f, "{param}: {}, ", arg_ty.method_argument())?;
+            }
+            write!(f, ")")?;
+            let result = self.result_type.method_return().to_string();
+            let result = result.replace("Retained<Self>", "Retained<T>");
+            write!(f, "{}", self.result_type.prefix_return(result))?;
+
+            if !with_body {
+                return writeln!(f, ";");
+            }
+
+            writeln!(f, " {{")?;
+            if self.safe {
+                writeln!(
+                    f,
+                    "        // SAFETY: The superclass inherits from the class that declares"
+                )?;
+                writeln!(
+                    f,
+                    "        // this initializer, and the signature matches its declaration."
+                )?;
+            } else {
+                writeln!(
+                    f,
+                    "        // SAFETY: Upheld by the caller, the superclass inherits from"
+                )?;
+                writeln!(f, "        // the class that declares this initializer.")?;
+            }
+            write!(f, "        unsafe {{ msg_send![super(self), ")?;
+            if self.arguments.is_empty() {
+                write!(f, "{}", self.selector)?;
+            } else {
+                let parts = self.selector.split(':').filter(|part| !part.is_empty());
+                for (i, (part, (param, _))) in parts.zip(&self.arguments).enumerate() {
+                    if 0 < i {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{part}: {}", param_name(param))?;
+                }
+            }
+            writeln!(f, "] }}")?;
+            writeln!(f, "    }}")?;
+
+            Ok(())
+        })
+    }
+
     pub fn fmt<'a>(
         &'a self,
         implied_items: impl IntoIterator<Item = ItemTree> + Clone + 'a,

@@ -307,6 +307,12 @@ macro_rules! __extern_class_inner {
         $($attr_impl)*
         unsafe impl $crate::DowncastTarget for $class $(<$($crate::__extern_class_map_anyobject!($generic)),+>)? {}
 
+        // SAFETY: The class is declared with `extern_class!`, so it's not
+        // defined in Rust, and the user promised in `#[unsafe(super(...))]`
+        // that its superclass is correct.
+        $($attr_impl)*
+        unsafe impl $(<$($generic $(: $($bounds)+ + $crate::Message)?),*>)? $crate::ExternClass for $class $(<$($generic),*>)? {}
+
         $($attr_impl)*
         unsafe impl $(<$($generic $(: $($bounds)+ + $crate::Message)?),*>)? $crate::ClassType for $class $(<$($generic),*>)? {
             type Super = $crate::__fallback_if_not_set! {
